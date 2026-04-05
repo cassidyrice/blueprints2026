@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Card Blueprint — Cardology Readings</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Georgia', serif;
+      background: #0a0a0a;
+      color: #e8e0d0;
+      min-height: 100vh;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 80px 24px 60px;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    .suit-row {
+      font-size: 28px;
+      letter-spacing: 12px;
+      margin-bottom: 32px;
+      opacity: 0.5;
+    }
+
+    h1 {
+      font-size: clamp(32px, 6vw, 52px);
+      font-weight: normal;
+      line-height: 1.2;
+      margin-bottom: 20px;
+      color: #f5ede0;
+    }
+
+    .subtitle {
+      font-size: 18px;
+      line-height: 1.7;
+      color: #a89880;
+      max-width: 520px;
+      margin: 0 auto 48px;
+    }
+
+    .divider {
+      width: 40px;
+      height: 1px;
+      background: #c8a96e;
+      margin: 0 auto 48px;
+    }
+
+    .how-it-works {
+      display: flex;
+      gap: 32px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 64px;
+      padding: 0 24px;
+      max-width: 680px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .step {
+      text-align: center;
+      flex: 1;
+      min-width: 140px;
+      max-width: 180px;
+    }
+
+    .step-num {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .step p {
+      font-size: 14px;
+      color: #8a7a6a;
+      line-height: 1.5;
+    }
+
+    .form-section {
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 48px 40px;
+      max-width: 520px;
+      margin: 0 auto 80px;
+    }
+
+    .form-section h2 {
+      font-size: 22px;
+      font-weight: normal;
+      margin-bottom: 8px;
+      color: #f5ede0;
+    }
+
+    .form-section .price {
+      color: #c8a96e;
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #6a5a4a;
+      margin-bottom: 8px;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 6px;
+      padding: 12px 14px;
+      color: #e8e0d0;
+      font-size: 16px;
+      font-family: 'Georgia', serif;
+      margin-bottom: 24px;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: #c8a96e;
+    }
+
+    .birthday-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.4fr;
+      gap: 12px;
+    }
+
+    .birthday-row input {
+      margin-bottom: 0;
+    }
+
+    .birthday-row-wrap {
+      margin-bottom: 24px;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    button {
+      width: 100%;
+      background: #c8a96e;
+      color: #0a0a0a;
+      border: none;
+      border-radius: 6px;
+      padding: 16px;
+      font-size: 16px;
+      font-family: 'Georgia', serif;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+      letter-spacing: 0.5px;
+    }
+
+    button:hover { background: #d4b87e; }
+    button:disabled { background: #3a3a3a; color: #6a6a6a; cursor: not-allowed; }
+
+    .error {
+      color: #e07070;
+      font-size: 14px;
+      margin-top: -16px;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 32px;
+      color: #3a3a3a;
+      font-size: 13px;
+    }
+
+    @media (max-width: 560px) {
+      .form-section { padding: 32px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="hero">
+    <div class="suit-row">♥ ♣ ♦ ♠</div>
+    <h1>Your life is already written in the cards</h1>
+    <p class="subtitle">
+      A standard deck of 52 playing cards is a calendar — 52 weeks, 4 seasons, 365 days.
+      Every birthday maps to a card. Every year reveals a spread.
+      Submit your question and find out what this year holds.
+    </p>
+    <div class="divider"></div>
+  </div>
+
+  <div class="how-it-works">
+    <div class="step">
+      <div class="step-num">♦</div>
+      <p>Enter your birthday and one question</p>
+    </div>
+    <div class="step">
+      <div class="step-num">♣</div>
+      <p>Your yearly card spread is calculated</p>
+    </div>
+    <div class="step">
+      <div class="step-num">♠</div>
+      <p>Your reading arrives by email within minutes</p>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h2>Get Your Reading</h2>
+    <p class="price">$20 — delivered to your inbox</p>
+
+    <form id="readingForm">
+      <label>Email</label>
+      <input type="email" id="email" placeholder="you@example.com" required />
+
+      <label>Birthday</label>
+      <div class="birthday-row-wrap">
+        <div class="birthday-row">
+          <input type="number" id="month" placeholder="Month" min="1" max="12" required />
+          <input type="number" id="day" placeholder="Day" min="1" max="31" required />
+          <input type="number" id="year" placeholder="Year" min="1900" max="2024" required />
+        </div>
+      </div>
+
+      <label>Your Question</label>
+      <textarea id="question" placeholder="Ask about love, money, career, a decision — anything. Be specific." required></textarea>
+
+      <div class="error" id="errorMsg"></div>
+
+      <button type="submit" id="submitBtn">Get My Reading — $20</button>
+    </form>
+  </div>
+
+  <div class="footer">cardblueprint.com</div>
+
+  <script>
+    const API = 'https://web-production-e4017.up.railway.app';
+
+    document.getElementById('readingForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const btn = document.getElementById('submitBtn');
+      const err = document.getElementById('errorMsg');
+      err.style.display = 'none';
+      btn.disabled = true;
+      btn.textContent = 'Preparing your reading…';
+
+      const body = {
+        email: document.getElementById('email').value.trim(),
+        birth_month: parseInt(document.getElementById('month').value),
+        birth_day: parseInt(document.getElementById('day').value),
+        birth_year: parseInt(document.getElementById('year').value),
+        question: document.getElementById('question').value.trim(),
+      };
+
+      try {
+        const res = await fetch(`${API}/create-checkout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+
+        const data = await res.json();
+
+        if (data.checkout_url) {
+          window.location.href = data.checkout_url;
+        } else {
+          throw new Error(data.detail || 'Something went wrong');
+        }
+      } catch (e) {
+        err.textContent = e.message || 'Unable to connect. Please try again.';
+        err.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Get My Reading — $20';
+      }
+    });
+  </script>
+
+</body>
+</html>
