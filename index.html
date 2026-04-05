@@ -12,120 +12,128 @@
       background: #0a0a0a;
       color: #e8e0d0;
       min-height: 100vh;
+      -webkit-text-size-adjust: 100%;
     }
 
+    /* ── Hero ── */
     .hero {
       text-align: center;
-      padding: 80px 24px 60px;
+      padding: 52px 20px 40px;
       max-width: 680px;
       margin: 0 auto;
     }
 
     .suit-row {
-      font-size: 28px;
-      letter-spacing: 12px;
-      margin-bottom: 32px;
+      font-size: 22px;
+      letter-spacing: 10px;
+      margin-bottom: 24px;
       opacity: 0.5;
     }
 
     h1 {
-      font-size: clamp(32px, 6vw, 52px);
+      font-size: clamp(26px, 7vw, 52px);
       font-weight: normal;
-      line-height: 1.2;
-      margin-bottom: 20px;
+      line-height: 1.25;
+      margin-bottom: 16px;
       color: #f5ede0;
     }
 
     .subtitle {
-      font-size: 18px;
+      font-size: clamp(15px, 4vw, 18px);
       line-height: 1.7;
       color: #a89880;
       max-width: 520px;
-      margin: 0 auto 48px;
+      margin: 0 auto 36px;
     }
 
     .divider {
       width: 40px;
       height: 1px;
       background: #c8a96e;
-      margin: 0 auto 48px;
+      margin: 0 auto 36px;
     }
 
+    /* ── How it works ── */
     .how-it-works {
       display: flex;
-      gap: 32px;
-      justify-content: center;
-      flex-wrap: wrap;
-      margin-bottom: 64px;
-      padding: 0 24px;
-      max-width: 680px;
+      flex-direction: column;
+      gap: 24px;
+      margin-bottom: 48px;
+      padding: 0 20px;
+      max-width: 480px;
       margin-left: auto;
       margin-right: auto;
     }
 
     .step {
-      text-align: center;
-      flex: 1;
-      min-width: 140px;
-      max-width: 180px;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      text-align: left;
     }
 
     .step-num {
-      font-size: 28px;
-      margin-bottom: 8px;
+      font-size: 24px;
+      flex-shrink: 0;
+      width: 36px;
+      text-align: center;
+      padding-top: 2px;
     }
 
     .step p {
-      font-size: 14px;
+      font-size: 15px;
       color: #8a7a6a;
       line-height: 1.5;
+      padding-top: 4px;
     }
 
+    /* ── Form ── */
     .form-section {
       background: #111;
       border: 1px solid #2a2a2a;
       border-radius: 12px;
-      padding: 48px 40px;
+      padding: 28px 20px;
       max-width: 520px;
-      margin: 0 auto 80px;
+      margin: 0 auto 64px;
     }
 
     .form-section h2 {
-      font-size: 22px;
+      font-size: 20px;
       font-weight: normal;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       color: #f5ede0;
     }
 
     .form-section .price {
       color: #c8a96e;
       font-size: 14px;
-      margin-bottom: 32px;
+      margin-bottom: 28px;
     }
 
     label {
       display: block;
-      font-size: 12px;
+      font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 1.5px;
       color: #6a5a4a;
       margin-bottom: 8px;
     }
 
-    input, textarea, select {
+    input, textarea {
       width: 100%;
       background: #1a1a1a;
       border: 1px solid #2a2a2a;
       border-radius: 6px;
-      padding: 12px 14px;
+      padding: 14px;
       color: #e8e0d0;
-      font-size: 16px;
+      font-size: 16px; /* prevents iOS zoom */
       font-family: 'Georgia', serif;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
       transition: border-color 0.2s;
+      -webkit-appearance: none;
     }
 
-    input:focus, textarea:focus, select:focus {
+    input:focus, textarea:focus {
       outline: none;
       border-color: #c8a96e;
     }
@@ -133,7 +141,7 @@
     .birthday-row {
       display: grid;
       grid-template-columns: 1fr 1fr 1.4fr;
-      gap: 12px;
+      gap: 10px;
     }
 
     .birthday-row input {
@@ -141,12 +149,12 @@
     }
 
     .birthday-row-wrap {
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
 
     textarea {
       resize: vertical;
-      min-height: 100px;
+      min-height: 90px;
     }
 
     button {
@@ -155,35 +163,57 @@
       color: #0a0a0a;
       border: none;
       border-radius: 6px;
-      padding: 16px;
+      padding: 18px 16px;
       font-size: 16px;
       font-family: 'Georgia', serif;
       font-weight: bold;
       cursor: pointer;
       transition: background 0.2s;
       letter-spacing: 0.5px;
+      min-height: 56px;
+      -webkit-appearance: none;
+      touch-action: manipulation;
     }
 
-    button:hover { background: #d4b87e; }
+    button:active { background: #b89858; }
     button:disabled { background: #3a3a3a; color: #6a6a6a; cursor: not-allowed; }
 
     .error {
       color: #e07070;
       font-size: 14px;
-      margin-top: -16px;
+      margin-top: -12px;
       margin-bottom: 16px;
       display: none;
+      line-height: 1.4;
     }
 
     .footer {
       text-align: center;
-      padding: 32px;
+      padding: 24px;
       color: #3a3a3a;
       font-size: 13px;
     }
 
-    @media (max-width: 560px) {
-      .form-section { padding: 32px 24px; }
+    /* ── Desktop ── */
+    @media (min-width: 600px) {
+      .hero { padding: 80px 24px 60px; }
+      .suit-row { font-size: 28px; letter-spacing: 12px; margin-bottom: 32px; }
+      .how-it-works {
+        flex-direction: row;
+        justify-content: center;
+        max-width: 680px;
+        gap: 32px;
+      }
+      .step {
+        flex-direction: column;
+        text-align: center;
+        align-items: center;
+        flex: 1;
+        min-width: 140px;
+        max-width: 180px;
+      }
+      .step-num { width: auto; }
+      .form-section { padding: 48px 40px; }
     }
   </style>
 </head>
