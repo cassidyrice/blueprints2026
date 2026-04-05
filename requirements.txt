@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+stripe
+resend
+anthropic
+python-multipart
