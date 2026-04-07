@@ -21,8 +21,8 @@ stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
 resend.api_key = os.environ["RESEND_API_KEY"]
 STRIPE_WEBHOOK_SECRET = os.environ["STRIPE_WEBHOOK_SECRET"]
 STRIPE_PRICE_ID = os.environ.get("STRIPE_PRICE_ID", "price_1TIq5bDgoKThmC0IOtzLQMJd")
-FROM_EMAIL = os.environ.get("FROM_EMAIL", "readings@cardblueprint.com")
-SUCCESS_URL = os.environ.get("SUCCESS_URL", "https://cardblueprint.com/thank-you")
+FROM_EMAIL = os.environ.get("FROM_EMAIL", "readings@cardblueprints.com")
+SUCCESS_URL = os.environ.get("SUCCESS_URL", "https://cardblueprints.com/thank-you")
 
 app = FastAPI()
 
@@ -57,7 +57,7 @@ async def create_checkout(req: ReadingRequest):
             mode="payment",
             customer_email=req.email,
             success_url=SUCCESS_URL,
-            cancel_url="https://cardblueprint.com",
+            cancel_url="https://cardblueprints.com",
             metadata={
                 "email": req.email,
                 "birth_month": str(req.birth_month),
@@ -119,7 +119,7 @@ def _send_reading_email(to_email: str, question: str, reading: str):
             </p>
             <div style="line-height: 1.8; font-size: 16px; white-space: pre-wrap;">{reading}</div>
             <p style="margin-top: 48px; font-size: 13px; color: #999; border-top: 1px solid #eee; padding-top: 16px;">
-                cardblueprint.com
+                cardblueprints.com
             </p>
         </div>
         """,

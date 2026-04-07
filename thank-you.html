@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Blueprint — Thank You</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Georgia, serif;
+            background-color: #0a0a0a;
+            color: #f5f5f5;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 60px 20px;
+            border-bottom: 1px solid #333;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+
+        .tagline {
+            font-size: 1.1em;
+            color: #c8a96e;
+            margin-bottom: 10px;
+        }
+
+        .suits {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 40px 0;
+            font-size: 3em;
+        }
+
+        .confirmation {
+            text-align: center;
+            padding: 60px 20px 40px;
+        }
+
+        .check-icon {
+            font-size: 3em;
+            color: #c8a96e;
+            margin-bottom: 20px;
+        }
+
+        .confirmation h2 {
+            font-size: 2em;
+            margin-bottom: 16px;
+            letter-spacing: 1px;
+        }
+
+        .confirmation p {
+            color: #999;
+            font-size: 1em;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .info-box {
+            background-color: #1a1a1a;
+            border-left: 4px solid #c8a96e;
+            padding: 20px 24px;
+            margin: 40px auto;
+            max-width: 500px;
+            color: #ddd;
+        }
+
+        .info-box strong {
+            display: block;
+            margin-bottom: 8px;
+            color: #f5f5f5;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+            padding: 20px 20px 60px;
+            border-bottom: 1px solid #333;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .step {
+            text-align: center;
+        }
+
+        .step-number {
+            font-size: 2.5em;
+            color: #c8a96e;
+            margin-bottom: 10px;
+        }
+
+        .step-title {
+            font-size: 1.1em;
+            margin-bottom: 8px;
+        }
+
+        .step-description {
+            font-size: 0.9em;
+            color: #999;
+        }
+
+        .step.done .step-number {
+            color: #6ecf8a;
+        }
+
+        .cta {
+            text-align: center;
+            padding: 50px 20px;
+        }
+
+        .cta p {
+            color: #666;
+            margin-bottom: 24px;
+            font-size: 0.95em;
+        }
+
+        a.button {
+            display: inline-block;
+            padding: 14px 32px;
+            background-color: #c8a96e;
+            color: #0a0a0a;
+            text-decoration: none;
+            font-family: Georgia, serif;
+            font-size: 0.95em;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        a.button:hover {
+            background-color: #d4b896;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+            border-top: 1px solid #333;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            .confirmation h2 {
+                font-size: 1.5em;
+            }
+
+            .suits {
+                gap: 15px;
+                font-size: 2em;
+            }
+
+            .steps {
+                gap: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Card Blueprint</h1>
+            <p class="tagline">✦ Cardology Readings ✦</p>
+        </header>
+
+        <div class="suits">
+            <span>♥</span>
+            <span>♣</span>
+            <span>♦</span>
+            <span>♠</span>
+        </div>
+
+        <div class="confirmation">
+            <div class="check-icon">✦</div>
+            <h2>Your reading is on its way</h2>
+            <p>Payment confirmed. Your personalized cardology reading is being generated and will arrive in your inbox shortly.</p>
+        </div>
+
+        <div class="info-box">
+            <strong>Check your email</strong>
+            Your reading will be delivered to the address you provided at checkout. If you don't see it within a few minutes, check your spam or promotions folder.
+        </div>
+
+        <div class="steps">
+            <div class="step done">
+                <div class="step-number">✓</div>
+                <div class="step-title">Details</div>
+                <div class="step-description">Your birthday and question received</div>
+            </div>
+            <div class="step done">
+                <div class="step-number">✓</div>
+                <div class="step-title">Payment</div>
+                <div class="step-description">Securely processed</div>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-title">Reading</div>
+                <div class="step-description">Arriving in your inbox now</div>
+            </div>
+        </div>
+
+        <div class="cta">
+            <p>Want another reading for a different question?</p>
+            <a href="https://cardblueprints.com" class="button">Get Another Reading</a>
+        </div>
+
+        <footer>
+            <p>&copy; 2025 Card Blueprint. All rights reserved.</p>
+        </footer>
+    </div>
+</body>
+</html>
