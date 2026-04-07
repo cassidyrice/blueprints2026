@@ -104,14 +104,19 @@ async def stripe_webhook(request: Request):
         year = int(meta.get("birth_year", 0))
 
         if not all([email, question, month, day, year]):
+            print(f"Missing metadata: email={email} question={question} month={month} day={day} year={year}")
             return JSONResponse({"status": "missing metadata"}, status_code=200)
 
+        print(f"Generating reading for {email}, {month}/{day}/{year}")
         try:
             reading = generate_reading(month, day, year, question)
+            print(f"Reading generated, sending email to {email}")
             _send_reading_email(email, question, reading)
+            print(f"Email sent successfully to {email}")
         except Exception as e:
-            # Log but return 200 so Stripe doesn't retry endlessly
-            print(f"Reading generation error: {e}")
+            import traceback
+            print(f"ERROR: {e}")
+            print(traceback.format_exc())
 
     return JSONResponse({"status": "ok"})
 
