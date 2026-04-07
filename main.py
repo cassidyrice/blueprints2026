@@ -121,8 +121,21 @@ async def stripe_webhook(request: Request):
     return JSONResponse({"status": "ok"})
 
 
+def _clean_reading(text: str) -> str:
+    """Strip markdown artifacts and convert to clean HTML paragraphs."""
+    import re
+    text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)   # **bold**
+    text = re.sub(r'\*(.+?)\*', r'\1', text)         # *italic*
+    text = re.sub(r'^#{1,4}\s+', '', text, flags=re.MULTILINE)  # headers
+    text = re.sub(r'^[-•]\s+', '', text, flags=re.MULTILINE)    # bullet points
+    text = re.sub(r'---+', '', text)                  # horizontal rules
+    paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
+    return ''.join(f'<p style="margin: 0 0 20px 0;">{p}</p>' for p in paragraphs)
+
+
 def _send_reading_email(to_email: str, question: str, reading: str):
     """Send the completed reading via Resend."""
+    reading_html = _clean_reading(reading)
     resend.Emails.send({
         "from": FROM_EMAIL,
         "to": to_email,
@@ -133,7 +146,7 @@ def _send_reading_email(to_email: str, question: str, reading: str):
             <p style="color: #666; font-size: 14px; margin-bottom: 32px; border-bottom: 1px solid #eee; padding-bottom: 16px;">
                 Question: <em>{question}</em>
             </p>
-            <div style="line-height: 1.8; font-size: 16px; white-space: pre-wrap;">{reading}</div>
+            <div style="line-height: 1.8; font-size: 16px;">{reading_html}</div>
             <p style="margin-top: 48px; font-size: 13px; color: #999; border-top: 1px solid #eee; padding-top: 16px;">
                 cardblueprints.com
             </p>

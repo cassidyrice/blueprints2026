@@ -51,7 +51,8 @@ READING STYLE:
 - Answer the client's actual question using the cards as evidence.
 - Under/Sweet Spot/Over spectrums: each card can manifest low (under), balanced (sweet spot), or excessive (over). Help the client aim for the sweet spot.
 - Be specific. "You have the King of Diamonds in Jupiter — that's the master of material resources arriving in your money period" is better than "you may experience financial growth."
-- Length: 300-500 words. Conversational, not listy."""
+- Length: 300-500 words. Conversational, not listy.
+- FORMATTING: Write in plain prose paragraphs only. Do NOT use markdown, bullet points, asterisks, bold, headers, or any formatting symbols. Just clean sentences and paragraphs separated by blank lines. Write like you're talking to someone over coffee."""
 
 
 def build_reading_prompt(result: dict, question: str) -> str:
