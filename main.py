@@ -11,7 +11,6 @@ import resend
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
-from fastapi.staticfiles import StaticFiles
 import pathlib
 from pydantic import BaseModel
 from datetime import date
