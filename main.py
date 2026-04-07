@@ -95,7 +95,7 @@ async def stripe_webhook(request: Request):
 
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
-        meta = session.get("metadata", {})
+        meta = dict(session.get("metadata") or {})
 
         email = meta.get("email")
         question = meta.get("question")
