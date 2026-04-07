@@ -6,13 +6,15 @@ Handles payment → reading generation → email delivery
 
 import os
 import json
+import re
+import traceback
 import stripe
 import resend
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
 import pathlib
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from datetime import date
 
 from generate_reading import generate_reading
@@ -21,9 +23,10 @@ from generate_reading import generate_reading
 stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
 resend.api_key = os.environ["RESEND_API_KEY"]
 STRIPE_WEBHOOK_SECRET = os.environ["STRIPE_WEBHOOK_SECRET"]
-STRIPE_PRICE_ID = os.environ.get("STRIPE_PRICE_ID", "price_1TIq5bDgoKThmC0IOtzLQMJd")
+STRIPE_PRICE_ID = os.environ["STRIPE_PRICE_ID"]
 FROM_EMAIL = os.environ.get("FROM_EMAIL", "readings@cardblueprints.com")
-SUCCESS_URL = os.environ.get("SUCCESS_URL", "https://cardblueprints.com/thank-you")
+SUCCESS_URL = os.environ.get("SUCCESS_URL", "https://web-production-e4017.up.railway.app/thank-you")
+CANCEL_URL = os.environ.get("CANCEL_URL", "https://web-production-e4017.up.railway.app")
 
 app = FastAPI()
 
@@ -41,6 +44,44 @@ class ReadingRequest(BaseModel):
     birth_day: int
     birth_year: int
     question: str
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v):
+        if "@" not in v or "." not in v.split("@")[-1]:
+            raise ValueError("Invalid email address")
+        return v
+
+    @field_validator("birth_month")
+    @classmethod
+    def validate_month(cls, v):
+        if not 1 <= v <= 12:
+            raise ValueError("Month must be 1-12")
+        return v
+
+    @field_validator("birth_day")
+    @classmethod
+    def validate_day(cls, v):
+        if not 1 <= v <= 31:
+            raise ValueError("Day must be 1-31")
+        return v
+
+    @field_validator("birth_year")
+    @classmethod
+    def validate_year(cls, v):
+        if not 1900 <= v <= date.today().year:
+            raise ValueError("Invalid birth year")
+        return v
+
+    @field_validator("question")
+    @classmethod
+    def validate_question(cls, v):
+        v = v.strip()
+        if len(v) < 5:
+            raise ValueError("Question is too short")
+        if len(v) > 2000:
+            raise ValueError("Question is too long")
+        return v
 
 
 @app.get("/thank-you", response_class=HTMLResponse)
@@ -68,7 +109,7 @@ async def create_checkout(req: ReadingRequest):
             mode="payment",
             customer_email=req.email,
             success_url=SUCCESS_URL,
-            cancel_url="https://cardblueprints.com",
+            cancel_url=CANCEL_URL,
             metadata={
                 "email": req.email,
                 "birth_month": str(req.birth_month),
@@ -79,7 +120,8 @@ async def create_checkout(req: ReadingRequest):
         )
         return {"checkout_url": session.url}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Checkout error: {e}")
+        raise HTTPException(status_code=500, detail="Unable to create checkout session")
 
 
 @app.post("/webhook")
@@ -90,7 +132,7 @@ async def stripe_webhook(request: Request):
 
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
-    except stripe.error.SignatureVerificationError:
+    except Exception:
         raise HTTPException(status_code=400, detail="Invalid signature")
 
     if event["type"] == "checkout.session.completed":
@@ -104,7 +146,7 @@ async def stripe_webhook(request: Request):
         year = int(meta.get("birth_year", 0))
 
         if not all([email, question, month, day, year]):
-            print(f"Missing metadata: email={email} question={question} month={month} day={day} year={year}")
+            print(f"MISSING METADATA — paid but no reading sent. email={email} month={month} day={day} year={year}")
             return JSONResponse({"status": "missing metadata"}, status_code=200)
 
         print(f"Generating reading for {email}, {month}/{day}/{year}")
@@ -114,21 +156,32 @@ async def stripe_webhook(request: Request):
             _send_reading_email(email, question, reading)
             print(f"Email sent successfully to {email}")
         except Exception as e:
-            import traceback
-            print(f"ERROR: {e}")
+            print(f"FAILED TO DELIVER READING — customer paid but got nothing. email={email} error={e}")
             print(traceback.format_exc())
+            # Send a fallback notification to the business owner
+            try:
+                resend.Emails.send({
+                    "from": FROM_EMAIL,
+                    "to": FROM_EMAIL,
+                    "subject": f"FAILED READING: {email}",
+                    "html": f"<p>Payment received but reading failed for <b>{email}</b>.</p>"
+                           f"<p>Birthday: {month}/{day}/{year}</p>"
+                           f"<p>Question: {question}</p>"
+                           f"<p>Error: {e}</p>",
+                })
+            except Exception:
+                print(f"ALERT EMAIL ALSO FAILED for {email}")
 
     return JSONResponse({"status": "ok"})
 
 
 def _clean_reading(text: str) -> str:
     """Strip markdown artifacts and convert to clean HTML paragraphs."""
-    import re
-    text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)   # **bold**
-    text = re.sub(r'\*(.+?)\*', r'\1', text)         # *italic*
-    text = re.sub(r'^#{1,4}\s+', '', text, flags=re.MULTILINE)  # headers
-    text = re.sub(r'^[-•]\s+', '', text, flags=re.MULTILINE)    # bullet points
-    text = re.sub(r'---+', '', text)                  # horizontal rules
+    text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)
+    text = re.sub(r'\*(.+?)\*', r'\1', text)
+    text = re.sub(r'^#{1,4}\s+', '', text, flags=re.MULTILINE)
+    text = re.sub(r'^[-•]\s+', '', text, flags=re.MULTILINE)
+    text = re.sub(r'---+', '', text)
     paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
     return ''.join(f'<p style="margin: 0 0 20px 0;">{p}</p>' for p in paragraphs)
 

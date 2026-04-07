@@ -246,7 +246,7 @@
           <div class="birthday-row">
             <input type="number" id="month" placeholder="MM" min="1" max="12" required />
             <input type="number" id="day" placeholder="DD" min="1" max="31" required />
-            <input type="number" id="year" placeholder="YYYY" min="1900" max="2024" required />
+            <input type="number" id="year" placeholder="YYYY" min="1900" max="2026" required />
           </div>
         </div>
 
@@ -262,7 +262,7 @@
   </div>
 
   <script>
-    const API = 'https://web-production-e4017.up.railway.app';
+    const API = window.location.origin;
 
     document.getElementById('readingForm').addEventListener('submit', async (e) => {
       e.preventDefault();

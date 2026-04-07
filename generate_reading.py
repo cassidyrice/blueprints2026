@@ -128,7 +128,7 @@ def generate_reading(month: int, day: int, year: int, question: str) -> str:
     client = anthropic.Anthropic()
     message = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=1024,
+        max_tokens=1500,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": prompt}]
     )
