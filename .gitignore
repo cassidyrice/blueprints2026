@@ -1,1 +1,7 @@
 .env
+__pycache__/
+*.pyc
+.venv/
+set-railway-vars.sh
+local_reading.py
+run.command

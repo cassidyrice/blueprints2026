@@ -8,6 +8,7 @@ import os
 import json
 import re
 import traceback
+import html
 import stripe
 import resend
 from fastapi import FastAPI, HTTPException, Request
@@ -16,6 +17,8 @@ from fastapi.responses import JSONResponse, HTMLResponse
 import pathlib
 from pydantic import BaseModel, field_validator
 from datetime import date
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
 
 from generate_reading import generate_reading
 
@@ -25,8 +28,18 @@ resend.api_key = os.environ["RESEND_API_KEY"]
 STRIPE_WEBHOOK_SECRET = os.environ["STRIPE_WEBHOOK_SECRET"]
 STRIPE_PRICE_ID = os.environ["STRIPE_PRICE_ID"]
 FROM_EMAIL = os.environ.get("FROM_EMAIL", "readings@cardblueprints.com")
-SUCCESS_URL = os.environ.get("SUCCESS_URL", "https://web-production-e4017.up.railway.app/thank-you")
-CANCEL_URL = os.environ.get("CANCEL_URL", "https://web-production-e4017.up.railway.app")
+BASE_URL = os.environ.get("BASE_URL", "https://cardblueprints.com").rstrip("/")
+SUCCESS_URL = os.environ.get("SUCCESS_URL", f"{BASE_URL}/thank-you")
+CANCEL_URL = os.environ.get("CANCEL_URL", BASE_URL)
+GOOGLE_SERVICE_ACCOUNT_FILE = os.environ.get("GOOGLE_SERVICE_ACCOUNT_FILE")
+GOOGLE_SERVICE_ACCOUNT_JSON = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
+GOOGLE_DRIVE_FOLDER_ID = os.environ.get("GOOGLE_DRIVE_FOLDER_ID")
+GOOGLE_DOC_SHARE_MODE = os.environ.get("GOOGLE_DOC_SHARE_MODE", "customer").lower()
+GOOGLE_DOC_FALLBACK_INLINE = os.environ.get("GOOGLE_DOC_FALLBACK_INLINE", "true").lower() == "true"
+GOOGLE_SCOPES = [
+    "https://www.googleapis.com/auth/documents",
+    "https://www.googleapis.com/auth/drive",
+]
 
 app = FastAPI()
 
@@ -152,8 +165,16 @@ async def stripe_webhook(request: Request):
         print(f"Generating reading for {email}, {month}/{day}/{year}")
         try:
             reading = generate_reading(month, day, year, question)
+            doc_url = None
+            try:
+                doc_url = _create_reading_doc(email, month, day, year, question, reading)
+            except Exception as doc_error:
+                print(f"GOOGLE DOC CREATION FAILED for {email}: {doc_error}")
+                if not GOOGLE_DOC_FALLBACK_INLINE:
+                    raise
+
             print(f"Reading generated, sending email to {email}")
-            _send_reading_email(email, question, reading)
+            _send_reading_email(email, question, reading=reading, doc_url=doc_url)
             print(f"Email sent successfully to {email}")
         except Exception as e:
             print(f"FAILED TO DELIVER READING — customer paid but got nothing. email={email} error={e}")
@@ -186,9 +207,89 @@ def _clean_reading(text: str) -> str:
     return ''.join(f'<p style="margin: 0 0 20px 0;">{p}</p>' for p in paragraphs)
 
 
-def _send_reading_email(to_email: str, question: str, reading: str):
+def _google_credentials():
+    if GOOGLE_SERVICE_ACCOUNT_JSON:
+        return service_account.Credentials.from_service_account_info(
+            json.loads(GOOGLE_SERVICE_ACCOUNT_JSON),
+            scopes=GOOGLE_SCOPES,
+        )
+    if GOOGLE_SERVICE_ACCOUNT_FILE:
+        return service_account.Credentials.from_service_account_file(
+            GOOGLE_SERVICE_ACCOUNT_FILE,
+            scopes=GOOGLE_SCOPES,
+        )
+    raise RuntimeError("Google Docs credentials are not configured")
+
+
+def _google_services():
+    credentials = _google_credentials()
+    return (
+        build("docs", "v1", credentials=credentials, cache_discovery=False),
+        build("drive", "v3", credentials=credentials, cache_discovery=False),
+    )
+
+
+def _doc_text(month: int, day: int, year: int, question: str, reading: str) -> str:
+    return (
+        "Cardology Reading\n\n"
+        f"Birth date: {month:02d}/{day:02d}/{year}\n"
+        f"Question: {question}\n\n"
+        f"{reading.strip()}\n"
+    )
+
+
+def _create_reading_doc(to_email: str, month: int, day: int, year: int, question: str, reading: str) -> str:
+    docs_service, drive_service = _google_services()
+    title = f"Card Blueprints Reading - {to_email} - {month:02d}-{day:02d}-{year}"
+    created = docs_service.documents().create(body={"title": title}).execute()
+    document_id = created["documentId"]
+
+    docs_service.documents().batchUpdate(
+        documentId=document_id,
+        body={
+            "requests": [
+                {
+                    "insertText": {
+                        "location": {"index": 1},
+                        "text": _doc_text(month, day, year, question, reading),
+                    }
+                }
+            ]
+        },
+    ).execute()
+
+    if GOOGLE_DRIVE_FOLDER_ID:
+        drive_service.files().update(
+            fileId=document_id,
+            addParents=GOOGLE_DRIVE_FOLDER_ID,
+            fields="id,webViewLink",
+        ).execute()
+
+    if GOOGLE_DOC_SHARE_MODE == "public":
+        permission = {"type": "anyone", "role": "reader"}
+    else:
+        permission = {"type": "user", "role": "reader", "emailAddress": to_email}
+
+    drive_service.permissions().create(
+        fileId=document_id,
+        body=permission,
+        sendNotificationEmail=False,
+    ).execute()
+
+    file_data = drive_service.files().get(fileId=document_id, fields="webViewLink").execute()
+    return file_data["webViewLink"]
+
+
+def _send_reading_email(to_email: str, question: str, reading: str, doc_url: str | None = None):
     """Send the completed reading via Resend."""
-    reading_html = _clean_reading(reading)
+    if doc_url:
+        body_html = (
+            '<p style="margin: 0 0 20px 0;">Your reading is ready.</p>'
+            f'<p style="margin: 0 0 20px 0;"><a href="{html.escape(doc_url)}">Open your Google Doc reading</a></p>'
+        )
+    else:
+        body_html = _clean_reading(reading)
+
     resend.Emails.send({
         "from": FROM_EMAIL,
         "to": to_email,
@@ -197,9 +298,9 @@ def _send_reading_email(to_email: str, question: str, reading: str):
         <div style="font-family: Georgia, serif; max-width: 680px; margin: 0 auto; padding: 40px 20px; color: #1a1a1a;">
             <h2 style="font-size: 22px; margin-bottom: 8px;">Your Cardology Reading</h2>
             <p style="color: #666; font-size: 14px; margin-bottom: 32px; border-bottom: 1px solid #eee; padding-bottom: 16px;">
-                Question: <em>{question}</em>
+                Question: <em>{html.escape(question)}</em>
             </p>
-            <div style="line-height: 1.8; font-size: 16px;">{reading_html}</div>
+            <div style="line-height: 1.8; font-size: 16px;">{body_html}</div>
             <p style="margin-top: 48px; font-size: 13px; color: #999; border-top: 1px solid #eee; padding-top: 16px;">
                 cardblueprints.com
             </p>

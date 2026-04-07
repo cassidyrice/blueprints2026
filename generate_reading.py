@@ -42,7 +42,9 @@ THE PLANETARY PERIODS (each ~52 days, starting on birthday):
 - Uranus: Surprise, spirituality, real estate, disruption that ultimately helps
 - Neptune: Dreams, secrets, hidden matters, illusions, travel, hopes and fears
 
-DIRECT vs VERTICAL: In each planetary period, the Direct card is the headline event. The Vertical card supports or elaborates — often a person involved, or context for the Direct card.
+TWO SPREADS PER PERIOD: Each planetary period has two cards — one extracted from the Birth Card's position in the yearly spread, one extracted from the PRC's position using the same method. Both cards are significant. The Birth Card's period card is the primary theme. The PRC's period card adds a secondary layer — often context, a person involved, or a supporting dynamic.
+
+CRITICAL LABELING RULE: The Birth Card's period card and the PRC's period card are NOT the Birth Card or PRC themselves. They are different cards that landed in that planetary period slot through the extraction process. Never say "your planetary ruling card is the 8 of Hearts in Mars" when you mean "the card in the Mars position of your PRC's spread is the 8 of Hearts." Always distinguish between the person's fixed Birth Card/PRC identity and the rotating period cards extracted from each spread.
 
 READING STYLE:
 - Direct and conversational. No mystical fluff.
@@ -85,28 +87,40 @@ def build_reading_prompt(result: dict, question: str) -> str:
     lines.append(f"RESULT (year-end outcome): {bc_spread.get('result', 'N/A')}")
     lines.append("")
 
-    lines.append("FULL YEARLY SPREAD (Birth Card):")
     from calculate_blueprint import PLANET_NAMES
+
+    lines.append(f"BIRTH CARD ({a['birth_card']}) — YEARLY SPREAD (extracted from Birth Card position):")
     for p in PLANET_NAMES:
-        card = bc_spread["periods"].get(p, "?")
+        pd = bc_spread["periods"].get(p, {})
+        card = pd if isinstance(pd, str) else pd.get("card", "?") if isinstance(pd, dict) else "?"
+        marker = " ← ACTIVE NOW" if p == ap["planet"] else ""
+        lines.append(f"  {p}: {card}{marker}")
+    lines.append("")
+
+    lines.append(f"PRC ({a['prc']}) — YEARLY SPREAD (extracted from PRC position, same method):")
+    for p in PLANET_NAMES:
+        pd = prc_spread["periods"].get(p, "?") if prc_spread and prc_spread.get("periods") else "?"
+        card = pd if isinstance(pd, str) else pd.get("card", "?") if isinstance(pd, dict) else "?"
         marker = " ← ACTIVE NOW" if p == ap["planet"] else ""
         lines.append(f"  {p}: {card}{marker}")
     lines.append("")
 
     lines.append(f"ACTIVE PLANETARY PERIOD: {ap['planet']} ({ap['domain']})")
-    lines.append(f"  Birth Card card in this period: {ap['bc_card']}")
-    lines.append(f"  PRC card in this period: {ap['prc_card']}")
+    lines.append(f"  Birth Card's current period card: {ap['bc_card']}")
+    lines.append(f"    (This is the card in the {ap['planet']} position of the Birth Card's spread — NOT the Birth Card itself)")
+    lines.append(f"  PRC's current period card: {ap['prc_card']}")
+    lines.append(f"    (This is the card in the {ap['planet']} position of the PRC's spread — NOT the PRC itself)")
 
     ib = ap.get("interpretation_bc")
     if ib:
-        lines.append(f"  Birth Card spectrum:")
+        lines.append(f"  Birth Card period card ({ap['bc_card']}) spectrum:")
         lines.append(f"    Under: {ib['under']}")
         lines.append(f"    Sweet Spot: {ib['sweet_spot']}")
         lines.append(f"    Over: {ib['over']}")
 
     ip = ap.get("interpretation_prc")
     if ip:
-        lines.append(f"  PRC spectrum:")
+        lines.append(f"  PRC period card ({ap['prc_card']}) spectrum:")
         lines.append(f"    Under: {ip['under']}")
         lines.append(f"    Sweet Spot: {ip['sweet_spot']}")
         lines.append(f"    Over: {ip['over']}")
@@ -127,7 +141,7 @@ def generate_reading(month: int, day: int, year: int, question: str) -> str:
 
     client = anthropic.Anthropic()
     message = client.messages.create(
-        model="claude-haiku-4-5-20251001",
+        model="claude-opus-4-6",
         max_tokens=1500,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": prompt}]
