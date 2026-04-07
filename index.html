@@ -12,102 +12,96 @@
       background: #0a0a0a;
       color: #e8e0d0;
       min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       -webkit-text-size-adjust: 100%;
     }
 
-    /* ── Hero ── */
-    .hero {
-      text-align: center;
-      padding: 52px 20px 40px;
-      max-width: 680px;
-      margin: 0 auto;
+    .page {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      max-width: 960px;
+      width: 100%;
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+
+    /* ── Left: pitch ── */
+    .pitch {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 48px 40px;
     }
 
     .suit-row {
-      font-size: 22px;
-      letter-spacing: 10px;
-      margin-bottom: 24px;
-      opacity: 0.5;
+      font-size: 18px;
+      letter-spacing: 8px;
+      margin-bottom: 20px;
+      opacity: 0.4;
     }
 
     h1 {
-      font-size: clamp(26px, 7vw, 52px);
+      font-size: 36px;
       font-weight: normal;
-      line-height: 1.25;
+      line-height: 1.2;
       margin-bottom: 16px;
       color: #f5ede0;
     }
 
-    .subtitle {
-      font-size: clamp(15px, 4vw, 18px);
+    .hook {
+      font-size: 16px;
       line-height: 1.7;
       color: #a89880;
-      max-width: 520px;
-      margin: 0 auto 36px;
+      margin-bottom: 28px;
     }
 
-    .divider {
-      width: 40px;
-      height: 1px;
-      background: #c8a96e;
-      margin: 0 auto 36px;
-    }
-
-    /* ── How it works ── */
-    .how-it-works {
+    .proof {
       display: flex;
       flex-direction: column;
-      gap: 24px;
-      margin-bottom: 48px;
-      padding: 0 20px;
-      max-width: 480px;
-      margin-left: auto;
-      margin-right: auto;
+      gap: 12px;
     }
 
-    .step {
+    .proof-item {
       display: flex;
-      align-items: flex-start;
-      gap: 16px;
-      text-align: left;
-    }
-
-    .step-num {
-      font-size: 24px;
-      flex-shrink: 0;
-      width: 36px;
-      text-align: center;
-      padding-top: 2px;
-    }
-
-    .step p {
-      font-size: 15px;
+      align-items: baseline;
+      gap: 10px;
+      font-size: 14px;
       color: #8a7a6a;
-      line-height: 1.5;
-      padding-top: 4px;
     }
 
-    /* ── Form ── */
+    .proof-item span {
+      color: #c8a96e;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    /* ── Right: form ── */
     .form-section {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 48px 40px;
       background: #111;
-      border: 1px solid #2a2a2a;
-      border-radius: 12px;
-      padding: 28px 20px;
-      max-width: 520px;
-      margin: 0 auto 64px;
+      border-left: 1px solid #1e1e1e;
     }
 
-    .form-section h2 {
+    .form-header {
+      margin-bottom: 24px;
+    }
+
+    .form-header h2 {
       font-size: 20px;
       font-weight: normal;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
       color: #f5ede0;
     }
 
-    .form-section .price {
+    .form-header .price {
       color: #c8a96e;
       font-size: 14px;
-      margin-bottom: 28px;
     }
 
     label {
@@ -116,7 +110,7 @@
       text-transform: uppercase;
       letter-spacing: 1.5px;
       color: #6a5a4a;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     input, textarea {
@@ -124,11 +118,11 @@
       background: #1a1a1a;
       border: 1px solid #2a2a2a;
       border-radius: 6px;
-      padding: 14px;
+      padding: 12px;
       color: #e8e0d0;
-      font-size: 16px; /* prevents iOS zoom */
+      font-size: 16px;
       font-family: 'Georgia', serif;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       transition: border-color 0.2s;
       -webkit-appearance: none;
     }
@@ -141,20 +135,15 @@
     .birthday-row {
       display: grid;
       grid-template-columns: 1fr 1fr 1.4fr;
-      gap: 10px;
+      gap: 8px;
     }
 
-    .birthday-row input {
-      margin-bottom: 0;
-    }
-
-    .birthday-row-wrap {
-      margin-bottom: 20px;
-    }
+    .birthday-row input { margin-bottom: 0; }
+    .birthday-row-wrap { margin-bottom: 16px; }
 
     textarea {
-      resize: vertical;
-      min-height: 90px;
+      resize: none;
+      height: 72px;
     }
 
     button {
@@ -163,14 +152,13 @@
       color: #0a0a0a;
       border: none;
       border-radius: 6px;
-      padding: 18px 16px;
+      padding: 16px;
       font-size: 16px;
       font-family: 'Georgia', serif;
       font-weight: bold;
       cursor: pointer;
       transition: background 0.2s;
       letter-spacing: 0.5px;
-      min-height: 56px;
       -webkit-appearance: none;
       touch-action: manipulation;
     }
@@ -181,97 +169,97 @@
     .error {
       color: #e07070;
       font-size: 14px;
-      margin-top: -12px;
-      margin-bottom: 16px;
+      margin-top: -8px;
+      margin-bottom: 12px;
       display: none;
       line-height: 1.4;
     }
 
-    .footer {
+    .delivery {
       text-align: center;
-      padding: 24px;
-      color: #3a3a3a;
-      font-size: 13px;
+      margin-top: 14px;
+      font-size: 12px;
+      color: #5a5a5a;
     }
 
-    /* ── Desktop ── */
-    @media (min-width: 600px) {
-      .hero { padding: 80px 24px 60px; }
-      .suit-row { font-size: 28px; letter-spacing: 12px; margin-bottom: 32px; }
-      .how-it-works {
-        flex-direction: row;
-        justify-content: center;
-        max-width: 680px;
-        gap: 32px;
+    /* ── Mobile: stack vertically, still no scroll ── */
+    @media (max-width: 700px) {
+      .page {
+        grid-template-columns: 1fr;
+        min-height: auto;
       }
-      .step {
-        flex-direction: column;
+
+      .pitch {
+        padding: 32px 20px 24px;
         text-align: center;
         align-items: center;
-        flex: 1;
-        min-width: 140px;
-        max-width: 180px;
       }
-      .step-num { width: auto; }
-      .form-section { padding: 48px 40px; }
+
+      h1 { font-size: clamp(24px, 6vw, 32px); }
+
+      .hook {
+        font-size: 15px;
+        margin-bottom: 20px;
+      }
+
+      .proof { display: none; }
+
+      .form-section {
+        padding: 24px 20px 32px;
+        border-left: none;
+        border-top: 1px solid #1e1e1e;
+      }
+
+      textarea { height: 60px; }
     }
   </style>
 </head>
 <body>
 
-  <div class="hero">
-    <div class="suit-row">♥ ♣ ♦ ♠</div>
-    <h1>Your life is already written in the cards</h1>
-    <p class="subtitle">
-      A standard deck of 52 playing cards is a calendar — 52 weeks, 4 seasons, 365 days.
-      Every birthday maps to a card. Every year reveals a spread.
-      Submit your question and find out what this year holds.
-    </p>
-    <div class="divider"></div>
-  </div>
-
-  <div class="how-it-works">
-    <div class="step">
-      <div class="step-num">♦</div>
-      <p>Enter your birthday and one question</p>
+  <div class="page">
+    <div class="pitch">
+      <div class="suit-row">&#9829; &#9827; &#9830; &#9824;</div>
+      <h1>Your life is already written in the cards</h1>
+      <p class="hook">
+        A deck of 52 cards maps to 52 weeks. Your birthday reveals your card.
+        Your card reveals this year. Ask one question — get a real answer.
+      </p>
+      <div class="proof">
+        <div class="proof-item"><span>&#9830;</span> Personalized to your exact birthday</div>
+        <div class="proof-item"><span>&#9827;</span> Your current planetary period analyzed</div>
+        <div class="proof-item"><span>&#9829;</span> Delivered to your inbox in minutes</div>
+      </div>
     </div>
-    <div class="step">
-      <div class="step-num">♣</div>
-      <p>Your yearly card spread is calculated</p>
-    </div>
-    <div class="step">
-      <div class="step-num">♠</div>
-      <p>Your reading arrives by email within minutes</p>
-    </div>
-  </div>
 
-  <div class="form-section">
-    <h2>Get Your Reading</h2>
-    <p class="price">$20 — delivered to your inbox</p>
-
-    <form id="readingForm">
-      <label>Email</label>
-      <input type="email" id="email" placeholder="you@example.com" required />
-
-      <label>Birthday</label>
-      <div class="birthday-row-wrap">
-        <div class="birthday-row">
-          <input type="number" id="month" placeholder="Month" min="1" max="12" required />
-          <input type="number" id="day" placeholder="Day" min="1" max="31" required />
-          <input type="number" id="year" placeholder="Year" min="1900" max="2024" required />
-        </div>
+    <div class="form-section">
+      <div class="form-header">
+        <h2>Get Your Reading</h2>
+        <p class="price">$20 — one question, one reading</p>
       </div>
 
-      <label>Your Question</label>
-      <textarea id="question" placeholder="Ask about love, money, career, a decision — anything. Be specific." required></textarea>
+      <form id="readingForm">
+        <label>Email</label>
+        <input type="email" id="email" placeholder="you@example.com" required />
 
-      <div class="error" id="errorMsg"></div>
+        <label>Birthday</label>
+        <div class="birthday-row-wrap">
+          <div class="birthday-row">
+            <input type="number" id="month" placeholder="MM" min="1" max="12" required />
+            <input type="number" id="day" placeholder="DD" min="1" max="31" required />
+            <input type="number" id="year" placeholder="YYYY" min="1900" max="2024" required />
+          </div>
+        </div>
 
-      <button type="submit" id="submitBtn">Get My Reading — $20</button>
-    </form>
+        <label>Your Question</label>
+        <textarea id="question" placeholder="Love, money, career, a decision — be specific." required></textarea>
+
+        <div class="error" id="errorMsg"></div>
+
+        <button type="submit" id="submitBtn">Get My Reading — $20</button>
+      </form>
+      <p class="delivery">Secure checkout via Stripe. Reading arrives by email.</p>
+    </div>
   </div>
-
-  <div class="footer">cardblueprints.com</div>
 
   <script>
     const API = 'https://web-production-e4017.up.railway.app';
@@ -283,7 +271,7 @@
       const err = document.getElementById('errorMsg');
       err.style.display = 'none';
       btn.disabled = true;
-      btn.textContent = 'Preparing your reading…';
+      btn.textContent = 'Preparing checkout\u2026';
 
       const body = {
         email: document.getElementById('email').value.trim(),
@@ -311,7 +299,7 @@
         err.textContent = e.message || 'Unable to connect. Please try again.';
         err.style.display = 'block';
         btn.disabled = false;
-        btn.textContent = 'Get My Reading — $20';
+        btn.textContent = 'Get My Reading \u2014 $20';
       }
     });
   </script>
