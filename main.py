@@ -10,7 +10,9 @@ import stripe
 import resend
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
+import pathlib
 from pydantic import BaseModel
 from datetime import date
 
@@ -40,6 +42,16 @@ class ReadingRequest(BaseModel):
     birth_day: int
     birth_year: int
     question: str
+
+
+@app.get("/thank-you", response_class=HTMLResponse)
+def thank_you():
+    return pathlib.Path("thank-you.html").read_text()
+
+
+@app.get("/", response_class=HTMLResponse)
+def index():
+    return pathlib.Path("index.html").read_text()
 
 
 @app.get("/health")
