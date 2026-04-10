@@ -7,6 +7,7 @@ Handles payment → reading generation → email delivery
 import os
 import json
 import re
+import time
 import traceback
 import html
 import stripe
@@ -27,6 +28,7 @@ stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
 resend.api_key = os.environ["RESEND_API_KEY"]
 STRIPE_WEBHOOK_SECRET = os.environ["STRIPE_WEBHOOK_SECRET"]
 STRIPE_PRICE_ID = os.environ["STRIPE_PRICE_ID"]
+STRIPE_UPSELL_PRICE_ID = os.environ.get("STRIPE_UPSELL_PRICE_ID", STRIPE_PRICE_ID)
 FROM_EMAIL = os.environ.get("FROM_EMAIL", "readings@cardblueprints.com")
 BASE_URL = os.environ.get("BASE_URL", "https://cardblueprints.com").rstrip("/")
 SUCCESS_URL = os.environ.get("SUCCESS_URL", f"{BASE_URL}/thank-you")
@@ -112,6 +114,11 @@ def health():
     return {"status": "ok"}
 
 
+def _success_url(extra_query: str = "") -> str:
+    separator = "&" if "?" in SUCCESS_URL else "?"
+    return f"{SUCCESS_URL}{separator}session_id={{CHECKOUT_SESSION_ID}}{extra_query}"
+
+
 @app.post("/create-checkout")
 async def create_checkout(req: ReadingRequest):
     """Create a Stripe checkout session with reading details in metadata."""
@@ -121,7 +128,7 @@ async def create_checkout(req: ReadingRequest):
             line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
             mode="payment",
             customer_email=req.email,
-            success_url=SUCCESS_URL,
+            success_url=_success_url(),
             cancel_url=CANCEL_URL,
             metadata={
                 "email": req.email,
@@ -137,6 +144,47 @@ async def create_checkout(req: ReadingRequest):
         raise HTTPException(status_code=500, detail="Unable to create checkout session")
 
 
+@app.post("/create-upsell-checkout")
+async def create_upsell_checkout(request: Request):
+    """Create a follow-up reading checkout from an existing paid session."""
+    try:
+        body = await request.json()
+        session_id = (body.get("session_id") or "").strip()
+        if not session_id:
+            raise HTTPException(status_code=400, detail="Missing session_id")
+
+        original = stripe.checkout.Session.retrieve(session_id)
+        metadata = original.get("metadata") or {}
+        email = original.get("customer_email") or metadata.get("email")
+
+        if not email:
+            raise HTTPException(status_code=400, detail="Original session is missing an email")
+
+        upsell_session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[{"price": STRIPE_UPSELL_PRICE_ID, "quantity": 1}],
+            mode="payment",
+            customer_email=email,
+            success_url=_success_url("&upsell=1"),
+            cancel_url=f"{SUCCESS_URL}?session_id={html.escape(session_id)}",
+            metadata={
+                "email": email,
+                "birth_month": str(metadata.get("birth_month", "")),
+                "birth_day": str(metadata.get("birth_day", "")),
+                "birth_year": str(metadata.get("birth_year", "")),
+                "question": "What should I focus on over the next 90 days?",
+                "offer": "year-ahead-follow-up",
+                "source_session_id": session_id,
+            },
+        )
+        return {"checkout_url": upsell_session.url}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Upsell checkout error: {e}")
+        raise HTTPException(status_code=500, detail="Unable to create upsell checkout")
+
+
 @app.post("/webhook")
 async def stripe_webhook(request: Request):
     """Stripe calls this after payment. Generate reading and send email."""
@@ -149,14 +197,14 @@ async def stripe_webhook(request: Request):
         raise HTTPException(status_code=400, detail="Invalid signature")
 
     if event["type"] == "checkout.session.completed":
-        raw = json.loads(payload)
-        meta = raw["data"]["object"].get("metadata") or {}
+        session = event["data"]["object"]
+        meta = session.get("metadata") or {}
 
         email = meta.get("email")
         question = meta.get("question")
-        month = int(meta.get("birth_month", 0))
-        day = int(meta.get("birth_day", 0))
-        year = int(meta.get("birth_year", 0))
+        month = _safe_int(meta.get("birth_month"))
+        day = _safe_int(meta.get("birth_day"))
+        year = _safe_int(meta.get("birth_year"))
 
         if not all([email, question, month, day, year]):
             print(f"MISSING METADATA — paid but no reading sent. email={email} month={month} day={day} year={year}")
@@ -164,17 +212,26 @@ async def stripe_webhook(request: Request):
 
         print(f"Generating reading for {email}, {month}/{day}/{year}")
         try:
-            reading = generate_reading(month, day, year, question)
+            reading = _retry_operation(
+                "reading generation",
+                lambda: generate_reading(month, day, year, question),
+            )
             doc_url = None
             try:
-                doc_url = _create_reading_doc(email, month, day, year, question, reading)
+                doc_url = _retry_operation(
+                    "google doc creation",
+                    lambda: _create_reading_doc(email, month, day, year, question, reading),
+                )
             except Exception as doc_error:
                 print(f"GOOGLE DOC CREATION FAILED for {email}: {doc_error}")
                 if not GOOGLE_DOC_FALLBACK_INLINE:
                     raise
 
             print(f"Reading generated, sending email to {email}")
-            _send_reading_email(email, question, reading=reading, doc_url=doc_url)
+            _retry_operation(
+                "email delivery",
+                lambda: _send_reading_email(email, question, reading=reading, doc_url=doc_url),
+            )
             print(f"Email sent successfully to {email}")
         except Exception as e:
             print(f"FAILED TO DELIVER READING — customer paid but got nothing. email={email} error={e}")
@@ -192,8 +249,29 @@ async def stripe_webhook(request: Request):
                 })
             except Exception:
                 print(f"ALERT EMAIL ALSO FAILED for {email}")
+            return JSONResponse({"status": "retry"}, status_code=500)
 
     return JSONResponse({"status": "ok"})
+
+
+def _safe_int(value, default: int = 0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _retry_operation(name: str, fn, attempts: int = 3, base_delay: float = 0.75):
+    last_error = None
+    for attempt in range(1, attempts + 1):
+        try:
+            return fn()
+        except Exception as exc:
+            last_error = exc
+            print(f"{name.upper()} FAILED attempt {attempt}/{attempts}: {exc}")
+            if attempt < attempts:
+                time.sleep(base_delay * attempt)
+    raise last_error
 
 
 def _clean_reading(text: str) -> str:
@@ -282,28 +360,42 @@ def _create_reading_doc(to_email: str, month: int, day: int, year: int, question
 
 def _send_reading_email(to_email: str, question: str, reading: str, doc_url: str | None = None):
     """Send the completed reading via Resend."""
+    escaped_question = html.escape(question)
     if doc_url:
         body_html = (
-            '<p style="margin: 0 0 20px 0;">Your reading is ready.</p>'
-            f'<p style="margin: 0 0 20px 0;"><a href="{html.escape(doc_url)}">Open your Google Doc reading</a></p>'
+            '<p style="margin: 0 0 18px 0;">Your reading is ready.</p>'
+            f'<p style="margin: 0 0 18px 0;"><a href="{html.escape(doc_url)}" style="color: #0a0a0a; background: #c8a96e; text-decoration: none; padding: 12px 18px; border-radius: 999px; display: inline-block; font-weight: bold;">Open your reading</a></p>'
+            '<p style="margin: 18px 0 0 0; color: #666;">If the button does not work, reply to this email and we will resend it.</p>'
         )
+        text_body = f"Your reading is ready.\n\nOpen it here: {doc_url}\n\nQuestion: {question}"
     else:
         body_html = _clean_reading(reading)
+        text_body = f"Your Cardology Reading\n\nQuestion: {question}\n\n{reading.strip()}"
 
     resend.Emails.send({
         "from": FROM_EMAIL,
         "to": to_email,
         "subject": "Your Cardology Reading",
+        "text": text_body,
         "html": f"""
-        <div style="font-family: Georgia, serif; max-width: 680px; margin: 0 auto; padding: 40px 20px; color: #1a1a1a;">
-            <h2 style="font-size: 22px; margin-bottom: 8px;">Your Cardology Reading</h2>
-            <p style="color: #666; font-size: 14px; margin-bottom: 32px; border-bottom: 1px solid #eee; padding-bottom: 16px;">
-                Question: <em>{html.escape(question)}</em>
-            </p>
-            <div style="line-height: 1.8; font-size: 16px;">{body_html}</div>
-            <p style="margin-top: 48px; font-size: 13px; color: #999; border-top: 1px solid #eee; padding-top: 16px;">
-                cardblueprints.com
-            </p>
+        <div style="margin: 0; padding: 24px; background: #f4efe6; font-family: Georgia, serif; color: #17130d;">
+            <div style="max-width: 680px; margin: 0 auto; background: #fffdfa; border: 1px solid #eadfcd; border-radius: 18px; overflow: hidden;">
+                <div style="padding: 28px 28px 20px; background: #111; color: #f5ede0;">
+                    <div style="font-size: 12px; letter-spacing: 3px; text-transform: uppercase; color: #c8a96e; margin-bottom: 12px;">Card Blueprint</div>
+                    <h2 style="font-size: 28px; margin: 0 0 10px 0; font-weight: normal;">Your reading is ready</h2>
+                    <p style="margin: 0; color: #cabda8; line-height: 1.6;">A personalized cardology reading based on your birthday and question.</p>
+                </div>
+                <div style="padding: 24px 28px;">
+                    <div style="margin: 0 0 24px 0; padding: 16px 18px; background: #f7f1e6; border-radius: 12px; border: 1px solid #eadfcd;">
+                        <div style="font-size: 11px; letter-spacing: 1.8px; text-transform: uppercase; color: #8a7250; margin-bottom: 8px;">Your Question</div>
+                        <div style="font-size: 16px; line-height: 1.7;">{escaped_question}</div>
+                    </div>
+                    <div style="line-height: 1.8; font-size: 16px;">{body_html}</div>
+                </div>
+                <div style="padding: 18px 28px 28px; color: #7d6a53; font-size: 13px; line-height: 1.6;">
+                    You can reply to this email if you need your reading re-sent.
+                </div>
+            </div>
         </div>
         """,
     })
