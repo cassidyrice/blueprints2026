@@ -5,3 +5,5 @@ __pycache__/
 set-railway-vars.sh
 local_reading.py
 run.command
+*.bak-*
+Cardology.code-workspace

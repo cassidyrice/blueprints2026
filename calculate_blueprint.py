@@ -7839,6 +7839,97 @@ SUIT_DOMAINS = {
     "♠": "Lifestyle/Transformation Patterns"
 }
 
+SUIT_MEANINGS = {
+    "♥": {
+        "name": "Hearts",
+        "domain": "Emotions & Relationships",
+        "description": "Love, family, partnerships, the inner emotional world. How you connect."
+    },
+    "♣": {
+        "name": "Clubs",
+        "domain": "Mind & Communication",
+        "description": "Ideas, knowledge, education, conversation. How you think."
+    },
+    "♦": {
+        "name": "Diamonds",
+        "domain": "Values & Resources",
+        "description": "Money, material security, worth, business. What you build and what you value."
+    },
+    "♠": {
+        "name": "Spades",
+        "domain": "Work & Transformation",
+        "description": "Labor, health, spirituality, deep change. The hardest suit — where real growth lives."
+    },
+}
+
+NUMBER_MEANINGS = {
+    "A": {
+        "name": "Ace",
+        "theme": "Desire & Beginnings",
+        "description": "The spark. A single burning want that starts everything. Raw potential that hasn't been shaped yet."
+    },
+    "2": {
+        "name": "Two",
+        "theme": "Partnership & Duality",
+        "description": "Two forces meeting. Cooperation, negotiation, the tension between self and other."
+    },
+    "3": {
+        "name": "Three",
+        "theme": "Creativity & Expression",
+        "description": "The first creative act. Self-expression, communication, variety — but also scatter if unfocused."
+    },
+    "4": {
+        "name": "Four",
+        "theme": "Foundation & Stability",
+        "description": "Structure, discipline, building something that lasts. Security — but rigidity if overdone."
+    },
+    "5": {
+        "name": "Five",
+        "theme": "Change & Restlessness",
+        "description": "Movement, disruption, the refusal to stay put. Freedom — but instability if you never land."
+    },
+    "6": {
+        "name": "Six",
+        "theme": "Responsibility & Karma",
+        "description": "The fated number. Service, duty, what life asks you to carry. Reward through right action."
+    },
+    "7": {
+        "name": "Seven",
+        "theme": "Faith & Spirituality",
+        "description": "The inner journey. Doubt, questioning, seeking what can't be proven. Wisdom earned through sitting with uncertainty."
+    },
+    "8": {
+        "name": "Eight",
+        "theme": "Power & Mastery",
+        "description": "Force, authority, the ability to move what others can't. Command — but domination if unchecked."
+    },
+    "9": {
+        "name": "Nine",
+        "theme": "Completion & Universality",
+        "description": "The widest lens. Endings, giving back, seeing the whole picture. Wisdom — but loss if you can't let go."
+    },
+    "10": {
+        "name": "Ten",
+        "theme": "Achievement & Mastery",
+        "description": "The culmination. Everything the suit represents, fully realized. Success — but burnout if you can't stop."
+    },
+    "J": {
+        "name": "Jack",
+        "theme": "Creative Youth",
+        "description": "The young expression of the suit. Inventive, charming, not yet fully formed. Potential over polish."
+    },
+    "Q": {
+        "name": "Queen",
+        "theme": "Receptive Mastery",
+        "description": "Deep knowing through feeling and intuition. Service-oriented authority. Power through understanding, not force."
+    },
+    "K": {
+        "name": "King",
+        "theme": "Authoritative Mastery",
+        "description": "Full command of the suit's domain. Leadership, responsibility, earned authority. The final word."
+    },
+}
+
 PLANET_NAMES = ["Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"]
 
 PLANET_DOMAINS = {
@@ -7872,6 +7963,24 @@ def get_birth_card(month, day):
     sv = calculate_solar_value(month, day)
     card = SOLAR_TO_CARD.get(str(sv), "Unknown")
     return card, sv
+
+
+# Refined plain-language card meanings generated from the suit meaning files.
+# Keep this override after the legacy dictionaries so older calculation code stays untouched
+# while JSON/script outputs use the refined descriptions and three-lens interpretations.
+try:
+    from cardology_refined_meanings import (
+        CARD_DESCRIPTIONS_REFINED,
+        THREE_LENS_INTERPRETATIONS_REFINED,
+        WEEKLY_CARD_MEANINGS_REFINED,
+        get_position_meaning,
+    )
+    CARD_DESCRIPTIONS = CARD_DESCRIPTIONS_REFINED
+    THREE_LENS_INTERPRETATIONS = THREE_LENS_INTERPRETATIONS_REFINED
+except Exception:
+    WEEKLY_CARD_MEANINGS_REFINED = {}
+    def get_position_meaning(card, position):
+        return None
 
 def get_card_suit(card):
     for suit in ["♥", "♣", "♦", "♠"]:
@@ -8009,7 +8118,12 @@ def get_long_range_card(card, age):
         "all_7_in_cycle": cards_7
     }
 
+FIXED_CARDS = ["8♣", "J♥", "K♠"]
+
 def get_environment_displacement(card, spread_year):
+    if card in FIXED_CARDS:
+        return None
+        
     spirit = SPREADS["0"]
     current = SPREADS.get(str(spread_year))
     if not current: return None
@@ -8074,7 +8188,8 @@ def calculate_blueprint(birth_month, birth_day, birth_year, target_date=None):
             card = cards[i]
             periods[planet] = {
                 "card": card,
-                "interpretation": THREE_LENS_INTERPRETATIONS.get(card)
+                "interpretation": THREE_LENS_INTERPRETATIONS.get(card),
+                "position_meaning": get_position_meaning(card, planet)
             }
         return periods
 
@@ -8085,6 +8200,13 @@ def calculate_blueprint(birth_month, birth_day, birth_year, target_date=None):
     prc_periods = {p: d["card"] for p, d in prc_periods_detailed.items()}
     
     return {
+        "schema_version": "1.0",
+        "inputs": {
+            "birth_month": birth_month,
+            "birth_day": birth_day,
+            "birth_year": birth_year,
+            "target_date": target_date.isoformat() if hasattr(target_date, "isoformat") else str(target_date),
+        },
         "archetype": {
             "birth_card": bc, "solar_value": sv,
             "suit_domain": SUIT_DOMAINS.get(get_card_suit(bc)),
@@ -8098,21 +8220,27 @@ def calculate_blueprint(birth_month, birth_day, birth_year, target_date=None):
             "periods": bc_periods,
             "periods_detailed": bc_periods_detailed,
             "pluto": bc_9[7] if bc_9 and len(bc_9) > 7 else None,
-            "result": bc_9[8] if bc_9 and len(bc_9) > 8 else None
+            "pluto_meaning": get_position_meaning(bc_9[7], "pluto") if bc_9 and len(bc_9) > 7 else None,
+            "result": bc_9[8] if bc_9 and len(bc_9) > 8 else None,
+            "result_meaning": get_position_meaning(bc_9[8], "result") if bc_9 and len(bc_9) > 8 else None
         },
         "prc_spread": {
             "anchor": prc_primary, 
             "periods": prc_periods,
             "periods_detailed": prc_periods_detailed,
             "pluto": prc_9[7] if prc_9 and len(prc_9) > 7 else None,
-            "result": prc_9[8] if prc_9 and len(prc_9) > 8 else None
+            "pluto_meaning": get_position_meaning(prc_9[7], "pluto") if prc_9 and len(prc_9) > 7 else None,
+            "result": prc_9[8] if prc_9 and len(prc_9) > 8 else None,
+            "result_meaning": get_position_meaning(prc_9[8], "result") if prc_9 and len(prc_9) > 8 else None
         },
         "active_period": {
             "planet": ap_planet, "domain": PLANET_DOMAINS[ap_planet],
             "bc_card": bc_periods.get(ap_planet),
             "prc_card": prc_periods.get(ap_planet),
             "interpretation_bc": THREE_LENS_INTERPRETATIONS.get(bc_periods.get(ap_planet)) if bc_periods.get(ap_planet) else None,
-            "interpretation_prc": THREE_LENS_INTERPRETATIONS.get(prc_periods.get(ap_planet)) if prc_periods.get(ap_planet) else None
+            "interpretation_prc": THREE_LENS_INTERPRETATIONS.get(prc_periods.get(ap_planet)) if prc_periods.get(ap_planet) else None,
+            "position_meaning_bc": get_position_meaning(bc_periods.get(ap_planet), ap_planet) if bc_periods.get(ap_planet) else None,
+            "position_meaning_prc": get_position_meaning(prc_periods.get(ap_planet), ap_planet) if prc_periods.get(ap_planet) else None
         },
         "long_range": {
             "bc": get_long_range_card(bc, age),
@@ -8161,6 +8289,12 @@ def format_output(res):
     if karma:
         print(f"  Environment (Support):   {karma['environment']}")
         print(f"  Displacement (Tax):      {karma['displacement']}")
+    else:
+        bc_val = res["archetype"]["birth_card"]
+        if bc_val in FIXED_CARDS:
+            print(f"  (Fixed Card {bc_val}: No variable Environment/Displacement)")
+        else:
+            print("  N/A")
     
     lr = res["long_range"]["bc"]
     if lr:
@@ -8173,14 +8307,28 @@ def format_output(res):
         print(f"Title: {d['title']}")
         print(f"Core:  {d['core_identity'][:200]}...")
 
+
+# ===========================================================================
+# Standalone entry point — pure engine, no LLM.
+# For readings, use cli.py (which wraps this engine + generate_reading.py).
+# ===========================================================================
+
 if __name__ == "__main__":
-    if len(sys.argv) < 4:
-        print("Usage: python3 calculate_blueprint.py <month> <day> <year> [--target-date YYYY-MM-DD]")
-        sys.exit(1)
-    bm, bd, by = int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3])
-    td = date.today()
-    if "--target-date" in sys.argv:
-        td = date.fromisoformat(sys.argv[sys.argv.index("--target-date") + 1])
-    result = calculate_blueprint(bm, bd, by, td)
-    format_output(result)
-    print("\n(Full JSON output omitted for brevity. Use result variable in code for all data.)")
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Card Blueprints — pure calculation engine. Outputs a blueprint for a birthday.",
+    )
+    parser.add_argument("month", type=int, help="Birth month (1-12)")
+    parser.add_argument("day", type=int, help="Birth day (1-31)")
+    parser.add_argument("year", type=int, help="Birth year (e.g. 1991)")
+    parser.add_argument("--json", action="store_true", help="Print raw blueprint JSON (default: formatted)")
+    parser.add_argument("--target-date", type=str, default=None, help="Target date YYYY-MM-DD (default: today)")
+    args = parser.parse_args()
+
+    td = date.fromisoformat(args.target_date) if args.target_date else date.today()
+    result = calculate_blueprint(args.month, args.day, args.year, td)
+
+    if args.json:
+        print(json.dumps(result, indent=2, default=str))
+    else:
+        format_output(result)
